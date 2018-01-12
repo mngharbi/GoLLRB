@@ -14,10 +14,10 @@ func (t *LLRB) ascendRange(h *Node, inf, sup Item, iterator ItemIterator) bool {
 	if h == nil {
 		return true
 	}
-	if !less(h.Item, sup) {
+	if !t.less(h.Item, sup) {
 		return t.ascendRange(h.Left, inf, sup, iterator)
 	}
-	if less(h.Item, inf) {
+	if t.less(h.Item, inf) {
 		return t.ascendRange(h.Right, inf, sup, iterator)
 	}
 
@@ -40,7 +40,7 @@ func (t *LLRB) ascendGreaterOrEqual(h *Node, pivot Item, iterator ItemIterator) 
 	if h == nil {
 		return true
 	}
-	if !less(h.Item, pivot) {
+	if !t.less(h.Item, pivot) {
 		if !t.ascendGreaterOrEqual(h.Left, pivot, iterator) {
 			return false
 		}
@@ -65,7 +65,7 @@ func (t *LLRB) ascendLessThan(h *Node, pivot Item, iterator ItemIterator) bool {
 	if !iterator(h.Item) {
 		return false
 	}
-	if less(h.Item, pivot) {
+	if t.less(h.Item, pivot) {
 		return t.ascendLessThan(h.Left, pivot, iterator)
 	}
 	return true
@@ -81,7 +81,7 @@ func (t *LLRB) descendLessOrEqual(h *Node, pivot Item, iterator ItemIterator) bo
 	if h == nil {
 		return true
 	}
-	if less(h.Item, pivot) || !less(pivot, h.Item) {
+	if t.less(h.Item, pivot) || !t.less(pivot, h.Item) {
 		if !t.descendLessOrEqual(h.Right, pivot, iterator) {
 			return false
 		}

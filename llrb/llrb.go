@@ -20,6 +20,9 @@ package llrb
 type LLRB struct {
 	count int
 	root  *Node
+
+	// Every tree has an index used for comparison
+	indexKey string
 }
 
 type Node struct {
@@ -30,18 +33,18 @@ type Node struct {
 }
 
 type Item interface {
-	Less(than Item) bool
+	Less(indexKey string, than Item) bool
 }
 
-//
-func less(x, y Item) bool {
+// Less depends on index used
+func (t *LLRB) less(x, y Item) bool {
 	if x == pinf {
 		return false
 	}
 	if x == ninf {
 		return true
 	}
-	return x.Less(y)
+	return x.Less(t.indexKey, y)
 }
 
 // Inf returns an Item that is "bigger than" any other item, if sign is positive.
@@ -63,19 +66,21 @@ var (
 
 type nInf struct{}
 
-func (nInf) Less(Item) bool {
+func (nInf) Less(string, Item) bool {
 	return true
 }
 
 type pInf struct{}
 
-func (pInf) Less(Item) bool {
+func (pInf) Less(string, Item) bool {
 	return false
 }
 
 // New() allocates a new tree
-func New() *LLRB {
-	return &LLRB{}
+func New(indexKey string) *LLRB {
+	return &LLRB{
+		indexKey: indexKey,
+	}
 }
 
 // SetRoot sets the root node of the tree.
@@ -103,9 +108,9 @@ func (t *LLRB) Get(key Item) Item {
 	h := t.root
 	for h != nil {
 		switch {
-		case less(key, h.Item):
+		case t.less(key, h.Item):
 			h = h.Left
-		case less(h.Item, key):
+		case t.less(h.Item, key):
 			h = h.Right
 		default:
 			return h.Item
@@ -173,9 +178,9 @@ func (t *LLRB) replaceOrInsert(h *Node, item Item) (*Node, Item) {
 	h = walkDownRot23(h)
 
 	var replaced Item
-	if less(item, h.Item) { // BUG
+	if t.less(item, h.Item) { // BUG
 		h.Left, replaced = t.replaceOrInsert(h.Left, item)
-	} else if less(h.Item, item) {
+	} else if t.less(h.Item, item) {
 		h.Right, replaced = t.replaceOrInsert(h.Right, item)
 	} else {
 		replaced, h.Item = h.Item, item
@@ -204,7 +209,7 @@ func (t *LLRB) insertNoReplace(h *Node, item Item) *Node {
 
 	h = walkDownRot23(h)
 
-	if less(item, h.Item) {
+	if t.less(item, h.Item) {
 		h.Left = t.insertNoReplace(h.Left, item)
 	} else {
 		h.Right = t.insertNoReplace(h.Right, item)
@@ -340,7 +345,7 @@ func (t *LLRB) delete(h *Node, item Item) (*Node, Item) {
 	if h == nil {
 		return nil, nil
 	}
-	if less(item, h.Item) {
+	if t.less(item, h.Item) {
 		if h.Left == nil { // item not present. Nothing to delete
 			return h, nil
 		}
@@ -353,7 +358,7 @@ func (t *LLRB) delete(h *Node, item Item) (*Node, Item) {
 			h = rotateRight(h)
 		}
 		// If @item equals @h.Item and no right children at @h
-		if !less(h.Item, item) && h.Right == nil {
+		if !t.less(h.Item, item) && h.Right == nil {
 			return nil, h.Item
 		}
 		// PETAR: Added 'h.Right != nil' below
@@ -361,7 +366,7 @@ func (t *LLRB) delete(h *Node, item Item) (*Node, Item) {
 			h = moveRedRight(h)
 		}
 		// If @item equals @h.Item, and (from above) 'h.Right != nil'
-		if !less(h.Item, item) {
+		if !t.less(h.Item, item) {
 			var subDeleted Item
 			h.Right, subDeleted = deleteMin(h.Right)
 			if subDeleted == nil {
